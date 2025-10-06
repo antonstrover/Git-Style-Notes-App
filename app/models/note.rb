@@ -7,7 +7,7 @@ class Note < ApplicationRecord
   has_one :fork_as_target, class_name: "Fork", foreign_key: :target_note_id
   has_many :forks_as_source, class_name: "Fork", foreign_key: :source_note_id
 
-  enum visibility: { private: 'private', link: 'link', public: 'public' }
+  enum :visibility, { private: 'private', link: 'link', public: 'public' }, prefix: true
 
   validates :owner, presence: true
   validates :title, presence: true
