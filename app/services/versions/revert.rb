@@ -17,12 +17,16 @@ module Versions
       validate_permissions!
       validate_target!
 
+      version = nil
       ActiveRecord::Base.transaction do
         version = create_revert_version
         update_head_version(version)
         log_revert(version)
-        version
       end
+
+      # Broadcast outside transaction to avoid locks
+      broadcast_version_created(version) if version
+      version
     rescue ActiveRecord::RecordInvalid => e
       raise Error, "Failed to revert version: #{e.message}"
     end
@@ -33,7 +37,7 @@ module Versions
 
     def validate_permissions!
       policy = NotePolicy.new(author, note)
-      unless policy.update?
+      unless policy.create_version?
         raise UnauthorizedError, "Author does not have permission to revert versions"
       end
     end
@@ -67,6 +71,26 @@ module Versions
         "Version reverted: new_version_id=#{version.id}, note_id=#{note.id}, " \
         "author_id=#{author.id}, target_version_id=#{target_version_id}"
       )
+    end
+
+    def broadcast_version_created(version)
+      ActionCable.server.broadcast(
+        "notes:#{note.id}",
+        {
+          type: "version_created",
+          note_id: note.id,
+          version_id: version.id,
+          head_version_id: note.head_version_id,
+          author: {
+            id: author.id,
+            email: author.email
+          },
+          created_at: version.created_at.iso8601,
+          summary: version.summary
+        }
+      )
+
+      Rails.logger.info "Broadcast version_created (revert): version_id=#{version.id}, note_id=#{note.id}"
     end
   end
 end

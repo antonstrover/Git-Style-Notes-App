@@ -29,6 +29,10 @@ class NotePolicy < ApplicationPolicy
     owner? # Only owner can manage collaborators
   end
 
+  def create_version?
+    owner? || editor? # Owner and editors can create versions
+  end
+
   private
 
   def public_or_link_visible?

@@ -35,51 +35,56 @@ module Api
       def create
         authorize @note, :create_version?
 
-        result = Versions::Create.call(
+        version = Versions::Create.new(
           note: @note,
           author: current_user,
           content: version_params[:content],
           summary: version_params[:summary],
           base_version_id: version_params[:base_version_id]
-        )
+        ).call
 
-        if result.success?
-          Rails.logger.info "Version created: #{result.version.id} for note #{@note.id} by user #{current_user.id}"
-          render json: result.version, status: :created
-        else
-          Rails.logger.warn "Version creation failed for note #{@note.id}: #{result.error}"
-          render json: {
-            error: {
-              code: result.conflict? ? 'version_conflict' : 'validation_failed',
-              message: result.error,
-              details: result.errors
-            }
-          }, status: result.conflict? ? :conflict : :unprocessable_entity
-        end
+        Rails.logger.info "Version created: #{version.id} for note #{@note.id} by user #{current_user.id}"
+        render json: version, status: :created
+      rescue Versions::Create::ConflictError => e
+        Rails.logger.warn "Version conflict for note #{@note.id}: #{e.message}"
+        render json: {
+          error: {
+            code: 'version_conflict',
+            message: e.message,
+            details: { head_version_id: @note.head_version_id }
+          }
+        }, status: :conflict
+      rescue Versions::Create::Error => e
+        Rails.logger.error "Version creation failed for note #{@note.id}: #{e.message}"
+        render json: {
+          error: {
+            code: 'validation_failed',
+            message: e.message
+          }
+        }, status: :unprocessable_entity
       end
 
       # POST /api/v1/notes/:note_id/versions/:id/revert
       def revert
         authorize @version, :revert?
 
-        result = Versions::Revert.call(
-          version: @version,
+        new_version = Versions::Revert.new(
+          note: @note,
           author: current_user,
+          target_version_id: @version.id,
           summary: revert_params[:summary]
-        )
+        ).call
 
-        if result.success?
-          Rails.logger.info "Version reverted: #{@version.id} for note #{@note.id} by user #{current_user.id}"
-          render json: result.new_version, status: :created
-        else
-          render json: {
-            error: {
-              code: 'revert_failed',
-              message: result.error,
-              details: result.errors
-            }
-          }, status: :unprocessable_entity
-        end
+        Rails.logger.info "Version reverted: #{@version.id} for note #{@note.id} by user #{current_user.id}"
+        render json: new_version, status: :created
+      rescue Versions::Revert::Error => e
+        Rails.logger.error "Version revert failed for note #{@note.id}: #{e.message}"
+        render json: {
+          error: {
+            code: 'revert_failed',
+            message: e.message
+          }
+        }, status: :unprocessable_entity
       end
 
       private
