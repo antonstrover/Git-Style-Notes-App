@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNote } from "@/lib/api/notes";
+import { getNote, updateNote } from "@/lib/api/notes";
 import { isAuthenticated } from "@/lib/auth/session";
 
 export async function GET(
@@ -27,6 +27,39 @@ export async function GET(
         error: {
           code: "internal_error",
           message: error instanceof Error ? error.message : "Failed to fetch note",
+        },
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      return NextResponse.json(
+        { error: { code: "unauthorized", message: "Not authenticated" } },
+        { status: 401 }
+      );
+    }
+
+    const params = await context.params;
+    const id = parseInt(params.id, 10);
+    const body = await request.json();
+
+    const updatedNote = await updateNote(id, body.note);
+    return NextResponse.json(updatedNote);
+  } catch (error) {
+    console.error("Update note error:", error);
+    return NextResponse.json(
+      {
+        error: {
+          code: "internal_error",
+          message: error instanceof Error ? error.message : "Failed to update note",
         },
       },
       { status: 500 }

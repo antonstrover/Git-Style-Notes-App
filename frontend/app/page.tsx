@@ -11,6 +11,8 @@ import { VisibilityBadge } from "@/components/ui/visibility-badge";
 import { LoadingState } from "@/components/feedback/loading-state";
 import { ErrorState } from "@/components/feedback/error-state";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { useToast } from "@/lib/hooks/use-toast";
+import { PageTransition } from "@/components/layout/page-transition";
 import { formatRelativeTime } from "@/lib/utils";
 import { queryKeys } from "@/lib/api/keys";
 import type { Note } from "@/lib/api/schemas";
@@ -18,6 +20,7 @@ import type { Note } from "@/lib/api/schemas";
 export default function DashboardPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [page, setPage] = useState(1);
   const perPage = 25;
 
@@ -56,26 +59,41 @@ export default function DashboardPage() {
     },
     onSuccess: (note: Note) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notes.lists() });
+      toast({
+        title: "Note created",
+        description: "Your new note has been created successfully.",
+      });
       router.push(`/notes/${note.id}`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
   if (isLoading) {
     return (
-      <div className="container max-w-screen-xl py-8">
-        <LoadingState />
-      </div>
+      <PageTransition>
+        <div className="container max-w-screen-xl py-8">
+          <LoadingState />
+        </div>
+      </PageTransition>
     );
   }
 
   if (error) {
     return (
-      <div className="container max-w-screen-xl py-8">
-        <ErrorState
-          message={error instanceof Error ? error.message : "Failed to load notes"}
-          retry={() => refetch()}
-        />
-      </div>
+      <PageTransition>
+        <div className="container max-w-screen-xl py-8">
+          <ErrorState
+            message={error instanceof Error ? error.message : "Failed to load notes"}
+            retry={() => refetch()}
+          />
+        </div>
+      </PageTransition>
     );
   }
 
@@ -84,7 +102,8 @@ export default function DashboardPage() {
   const totalPages = Math.ceil(total / perPage);
 
   return (
-    <div className="container max-w-screen-xl py-8">
+    <PageTransition>
+      <div className="container max-w-screen-xl py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Notes</h1>
@@ -95,6 +114,7 @@ export default function DashboardPage() {
         <Button
           onClick={() => createNoteMutation.mutate()}
           disabled={createNoteMutation.isPending}
+          aria-label="Create new note"
         >
           <Plus className="mr-2 h-4 w-4" />
           New Note
@@ -108,6 +128,7 @@ export default function DashboardPage() {
             placeholder="Search notes... (coming soon)"
             className="pl-9"
             disabled
+            aria-label="Search notes"
           />
         </div>
       </div>
@@ -131,6 +152,15 @@ export default function DashboardPage() {
                 key={note.id}
                 className="cursor-pointer transition-colors hover:bg-accent"
                 onClick={() => router.push(`/notes/${note.id}`)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open note: ${note.title}`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/notes/${note.id}`);
+                  }
+                }}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -163,10 +193,11 @@ export default function DashboardPage() {
                 size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
+                aria-label="Previous page"
               >
                 Previous
               </Button>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground" aria-live="polite" aria-atomic="true">
                 Page {page} of {totalPages}
               </div>
               <Button
@@ -174,6 +205,7 @@ export default function DashboardPage() {
                 size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
+                aria-label="Next page"
               >
                 Next
               </Button>
@@ -181,6 +213,7 @@ export default function DashboardPage() {
           )}
         </>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }
