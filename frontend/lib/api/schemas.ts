@@ -169,6 +169,34 @@ export const revertPreviewResponseSchema = z.object({
   diff: diffResultSchema,
 });
 
+// Search schemas
+export const searchResultSchema = z.object({
+  chunk_id: z.string(),
+  note_id: z.number(),
+  version_id: z.number(),
+  title: z.string(),
+  snippet: z.string(),
+  score: z.number(),
+  updated_at: z.string(),
+});
+
+export const searchResponseSchema = z.object({
+  results: z.array(searchResultSchema),
+  total_count: z.number().optional(),
+  query: z.string(),
+  top: z.number(),
+  skip: z.number(),
+});
+
+export const suggestionSchema = z.object({
+  text: z.string(),
+  note_id: z.number(),
+});
+
+export const suggestResponseSchema = z.object({
+  suggestions: z.array(suggestionSchema),
+});
+
 // Type exports
 export type User = z.infer<typeof userSchema>;
 export type UserPartial = z.infer<typeof userPartialSchema>;
@@ -194,3 +222,9 @@ export type MergeSummary = z.infer<typeof mergeSummarySchema>;
 export type MergePreviewResult = z.infer<typeof mergePreviewResultSchema>;
 export type MergePreviewResponse = z.infer<typeof mergePreviewResponseSchema>;
 export type RevertPreviewResponse = z.infer<typeof revertPreviewResponseSchema>;
+
+// Search type exports
+export type SearchResult = z.infer<typeof searchResultSchema>;
+export type SearchResponse = z.infer<typeof searchResponseSchema>;
+export type Suggestion = z.infer<typeof suggestionSchema>;
+export type SuggestResponse = z.infer<typeof suggestResponseSchema>;

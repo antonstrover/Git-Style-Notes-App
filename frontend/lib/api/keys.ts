@@ -34,4 +34,13 @@ export const queryKeys = {
     revertPreview: (noteId: number, versionId: number) =>
       [...queryKeys.diffs.all(noteId), "revert-preview", versionId] as const,
   },
+  search: {
+    all: ["search"] as const,
+    queries: () => [...queryKeys.search.all, "query"] as const,
+    query: (q: string, top: number, skip: number, noteId?: number) =>
+      [...queryKeys.search.queries(), { q, top, skip, noteId }] as const,
+    suggests: () => [...queryKeys.search.all, "suggest"] as const,
+    suggest: (q: string) =>
+      [...queryKeys.search.suggests(), q] as const,
+  },
 };

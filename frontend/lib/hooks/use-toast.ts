@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export type ToastActionElement = React.ReactElement;
+export type ToastActionElement = React.ReactElement<any>;
 
 export interface ToastProps {
   id: string;

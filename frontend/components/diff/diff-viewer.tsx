@@ -60,7 +60,6 @@ export function DiffViewer({
           )}
         </div>
       </div>
-
       {/* Truncation warning */}
       {diff.truncated && (
         <Alert variant="destructive">
@@ -71,7 +70,6 @@ export function DiffViewer({
           </AlertDescription>
         </Alert>
       )}
-
       {/* Conflict summary (if merge preview provided) */}
       {mergePreview && mergePreview.summary.conflict_count > 0 && (
         <Alert>
@@ -82,7 +80,6 @@ export function DiffViewer({
           </AlertDescription>
         </Alert>
       )}
-
       {/* Hunks */}
       <div className="space-y-4">
         {diff.hunks.map((hunk, index) => {
@@ -98,7 +95,9 @@ export function DiffViewer({
           return (
             <div
               key={index}
-              ref={(el) => (hunkRefs.current[index] = el)}
+              ref={el => {
+                (hunkRefs.current[index] = el);
+              }}
               data-hunk-index={index}
             >
               <DiffHunkComponent
@@ -110,7 +109,6 @@ export function DiffViewer({
           );
         })}
       </div>
-
       {/* Hunk count */}
       <div className="text-center text-sm text-muted-foreground">
         Showing {diff.hunks.length} {diff.hunks.length === 1 ? "hunk" : "hunks"}

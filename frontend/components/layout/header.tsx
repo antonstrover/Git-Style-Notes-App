@@ -1,13 +1,16 @@
 "use client";
 
-import { Moon, Sun, LogOut, FileText } from "lucide-react";
+import { Moon, Sun, LogOut, FileText, Search } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCommandPalette } from "@/components/search/command-palette-provider";
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const { open: openCommandPalette } = useCommandPalette();
 
   const handleLogout = async () => {
     try {
@@ -31,6 +34,23 @@ export function Header() {
           </a>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={openCommandPalette}
+                  aria-label="Search"
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Search (⌘K)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button
             variant="ghost"
             size="icon"
