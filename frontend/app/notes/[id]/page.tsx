@@ -14,6 +14,9 @@ import { ErrorState } from "@/components/feedback/error-state";
 import { useToast } from "@/lib/hooks/use-toast";
 import { PageTransition } from "@/components/layout/page-transition";
 import { ConflictDialog } from "@/components/editor/conflict-dialog";
+import { PresenceBar } from "@/components/presence/presence-bar";
+import { TypingIndicator } from "@/components/presence/typing-indicator";
+import { useRealtimeNote } from "@/lib/hooks/use-realtime-note";
 import { formatRelativeTime } from "@/lib/utils";
 import { queryKeys } from "@/lib/api/keys";
 import type { Note, Version } from "@/lib/api/schemas";
@@ -31,6 +34,8 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
   const [originalContent, setOriginalContent] = useState("");
   const [versionsPage, setVersionsPage] = useState(1);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [conflictHeadId, setConflictHeadId] = useState<number | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
 
   const {
     data: note,
@@ -42,6 +47,20 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
       const response = await fetch(`/api/notes/${noteId}`);
       if (!response.ok) throw new Error("Failed to fetch note");
       return response.json() as Promise<Note>;
+    },
+  });
+
+  // Realtime collaboration
+  const {
+    presenceUsers,
+    typingUsers,
+    isConnected,
+    notifyTyping,
+  } = useRealtimeNote({
+    noteId,
+    onConflict: (headVersionId) => {
+      setConflictHeadId(headVersionId);
+      setShowConflictDialog(true);
     },
   });
 
@@ -70,6 +89,22 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
       }
     }
   }, [note]);
+
+  // Fetch current user email
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/user");
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUserEmail(data.email);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const updateTitleMutation = useMutation({
     mutationFn: async (newTitle: string) => {
@@ -174,6 +209,33 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     queryClient.invalidateQueries({ queryKey: queryKeys.versions.all(noteId) });
   };
 
+  const handleFork = async () => {
+    try {
+      const response = await fetch(`/api/notes/${noteId}/fork`, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error("Failed to fork note");
+      const forkedNote = await response.json();
+      setShowConflictDialog(false);
+      toast({
+        title: "Note forked",
+        description: "Your changes have been saved in a new note.",
+      });
+      router.push(`/notes/${forkedNote.id}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fork note",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    notifyTyping();
+  };
+
   // Keyboard shortcut for save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -215,15 +277,18 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
       <div className="container max-w-screen-2xl py-8">
       <ConflictDialog
         open={showConflictDialog}
+        headVersionId={conflictHeadId || undefined}
         onClose={() => setShowConflictDialog(false)}
         onRefresh={handleRefresh}
+        onFork={handleFork}
       />
       <div className="mb-6 flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.push("/")} aria-label="Back to notes list">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Notes
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {isConnected && <PresenceBar users={presenceUsers} currentUserEmail={currentUserEmail} />}
           <Button
             onClick={handleSave}
             disabled={!hasContentChanges || createVersionMutation.isPending}
@@ -270,9 +335,18 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {isConnected && (
+                  <div className="mb-2">
+                    <TypingIndicator
+                      typingUserIds={typingUsers}
+                      allUsers={presenceUsers}
+                      currentUserEmail={currentUserEmail}
+                    />
+                  </div>
+                )}
                 <TipTapEditor
                   content={content}
-                  onContentChange={setContent}
+                  onContentChange={handleContentChange}
                   placeholder="Start writing your note..."
                   className="min-h-[500px]"
                 />
@@ -339,9 +413,18 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {isConnected && (
+                <div className="mb-2">
+                  <TypingIndicator
+                    typingUserIds={typingUsers}
+                    allUsers={presenceUsers}
+                    currentUserEmail={currentUserEmail}
+                  />
+                </div>
+              )}
               <TipTapEditor
                 content={content}
-                onContentChange={setContent}
+                onContentChange={handleContentChange}
                 placeholder="Start writing your note..."
                 className="min-h-[500px]"
               />

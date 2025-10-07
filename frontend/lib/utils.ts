@@ -30,3 +30,14 @@ export function formatRelativeTime(date: string | Date): string {
   if (diffDays < 7) return `${diffDays}d ago`;
   return formatDate(d);
 }
+
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}

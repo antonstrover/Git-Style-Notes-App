@@ -13,11 +13,19 @@ import {
 
 interface ConflictDialogProps {
   open: boolean;
+  headVersionId?: number;
   onClose: () => void;
   onRefresh: () => void;
+  onFork?: () => void;
 }
 
-export function ConflictDialog({ open, onClose, onRefresh }: ConflictDialogProps) {
+export function ConflictDialog({
+  open,
+  headVersionId,
+  onClose,
+  onRefresh,
+  onFork
+}: ConflictDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
@@ -27,14 +35,32 @@ export function ConflictDialog({ open, onClose, onRefresh }: ConflictDialogProps
             <DialogTitle>Version Conflict</DialogTitle>
           </div>
           <DialogDescription>
-            The note has been updated by someone else while you were editing. Your changes cannot be
-            saved. Please refresh to see the latest version.
+            Another collaborator has updated this note while you were editing.
+            {headVersionId && ` The note is now at version #${headVersionId}.`}
           </DialogDescription>
         </DialogHeader>
+        <div className="py-4">
+          <p className="text-sm">You have two options:</p>
+          <ul className="mt-2 list-disc list-inside text-sm space-y-1">
+            <li>
+              <strong>Refresh:</strong> Discard your changes and load the latest version
+            </li>
+            {onFork && (
+              <li>
+                <strong>Fork:</strong> Create a separate copy with your changes
+              </li>
+            )}
+          </ul>
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
+          {onFork && (
+            <Button variant="secondary" onClick={onFork}>
+              Fork Note
+            </Button>
+          )}
           <Button onClick={onRefresh}>Refresh Content</Button>
         </DialogFooter>
       </DialogContent>

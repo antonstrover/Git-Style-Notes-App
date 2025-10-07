@@ -5,9 +5,10 @@ A Rails 8 API-only application providing immutable, versioned note-taking with c
 ## 🎯 Features
 
 - **Immutable Versioning**: Append-only version history with atomic head pointer updates
+- **Real-time Collaboration**: Live presence, typing indicators, and instant updates via Action Cable
 - **Collaborative Editing**: Role-based access control (owner/editor/viewer)
 - **Note Forking**: Create independent copies of notes with full version history
-- **Conflict Detection**: Base version ID checking for concurrent edits
+- **Conflict Detection**: Base version ID checking for concurrent edits with real-time notifications
 - **Flexible Visibility**: Private, link-shareable, or public notes
 - **RESTful JSON API**: Versioned API with pagination and standard error formats
 - **Comprehensive Authorization**: Pundit policies for fine-grained access control
@@ -254,10 +255,32 @@ DELETE /api/v1/notes/:note_id/collaborators/:id
 
 All persistence operations use service objects with transactions:
 
-- **Versions::Create**: Creates version + updates head atomically
-- **Versions::Revert**: Copies content from target version
+- **Versions::Create**: Creates version + updates head atomically + broadcasts real-time events
+- **Versions::Revert**: Copies content from target version + broadcasts
 - **Notes::Fork**: Duplicates note with new owner
+- **Presence::Manager**: Manages real-time user presence per note
 - **Diffs::Compute**: Placeholder for future diff logic
+
+### Real-time Collaboration (Action Cable)
+
+WebSocket-based live collaboration features:
+
+- **NotesChannel**: Subscribe to note-specific updates (requires show permission)
+- **Presence Tracking**: See who's actively viewing/editing in real time
+- **Version Updates**: Automatic history refresh when collaborators save
+- **Typing Indicators**: See when collaborators are actively typing (editors only)
+- **Conflict Alerts**: Real-time notifications when base version mismatches
+
+**Event Contracts:**
+- `version_created`: Broadcast when new version saved
+- `presence`: Active user list with initials
+- `typing`: Ephemeral typing signal (3-5s display)
+- `conflict_notice`: Head/base mismatch detected
+
+**Security:**
+- Token-based WebSocket auth via query params
+- Pundit policies enforce subscribe permissions
+- Typing restricted to editors/owners
 
 ### Authorization (Pundit)
 
@@ -279,6 +302,11 @@ All persistence operations use service objects with transactions:
 
 ```
 app/
+├── channels/                        # Action Cable (WebSockets)
+│   ├── application_cable/
+│   │   ├── connection.rb            # WebSocket auth
+│   │   └── channel.rb
+│   └── notes_channel.rb             # Real-time note updates
 ├── controllers/
 │   ├── application_controller.rb    # Pundit + Devise integration
 │   ├── concerns/
@@ -301,14 +329,17 @@ app/
 │   └── fork_policy.rb
 └── services/                        # Business logic
     ├── versions/
-    │   ├── create.rb
-    │   └── revert.rb
+    │   ├── create.rb                # + broadcasts version_created
+    │   └── revert.rb                # + broadcasts version_created
+    ├── presence/
+    │   └── manager.rb               # User presence tracking
     ├── notes/
     │   └── fork.rb
     └── diffs/
         └── compute.rb
 
-spec/                                # RSpec tests (450+ specs)
+spec/                                # RSpec tests (500+ specs)
+├── channels/                        # Action Cable channel tests
 ├── models/
 ├── services/
 ├── policies/
@@ -380,14 +411,173 @@ Run `rails db:seed` to create:
 ✅ All specs pass locally
 ✅ Seeds load successfully
 
-## 🚧 Out of Scope (Future PRs)
+## 🚧 Out of Scope (Backend - Future PRs)
 
 - Real-time Action Cable for presence and conflict alerts
 - Full diff computation and merge service logic
 - Azure AI Search integration for semantic search
 - Rate limiting and advanced performance tuning
-- Frontend/SDK clients
 - JWT token authentication
+
+---
+
+## 🎨 Frontend (Next.js)
+
+The frontend is a Next.js 14 application with TypeScript, providing a polished UI for the versioned notes system.
+
+### Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **State Management**: TanStack Query (React Query v5)
+- **Rich Text**: TipTap editor with markdown shortcuts
+- **Animation**: Framer Motion
+- **Validation**: Zod schemas
+- **Testing**: Vitest (unit) + Playwright (E2E)
+
+### Quick Start
+
+```bash
+cd frontend
+npm install
+cp .env.local.example .env.local
+npm run dev
+```
+
+Frontend runs on **http://localhost:3001**
+
+### Environment Variables
+
+```env
+NEXT_PUBLIC_APP_NAME=Versioned Notes
+BACKEND_BASE_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_BACKEND_WS_URL=ws://localhost:3000/cable
+BACKEND_WS_URL=ws://localhost:3000/cable
+SESSION_COOKIE_NAME=vn_auth
+SESSION_COOKIE_SECURE=false  # true in production
+```
+
+### Features Implemented
+
+✅ **Authentication**
+- Login page with credential validation
+- Server-side session via HttpOnly cookies
+- Auth token stored as `base64(email:password)`
+- All API requests include `Authorization: Basic` header
+
+✅ **Dashboard**
+- List accessible notes with pagination
+- Create new notes
+- Search bar placeholder (non-functional)
+- Visibility badges (Private, Link, Public)
+- Empty state with call-to-action
+
+✅ **Note Editor**
+- TipTap rich text editor with markdown shortcuts
+- Save version with conflict detection (409 handling)
+- Keyboard shortcut: Cmd/Ctrl+S to save
+- Version history pane (paginated)
+- Real-time content change detection
+
+✅ **Real-time Collaboration**
+- Live presence bar showing active collaborators
+- Typing indicators for concurrent editors
+- Automatic version history updates
+- Conflict notifications with Fork/Refresh options
+- WebSocket connection via Action Cable
+
+✅ **UI/UX**
+- Light/dark theme toggle with system preference
+- Responsive layout (desktop optimized, mobile functional)
+- Loading states with skeleton screens
+- Error states with retry actions
+- Accessible keyboard navigation
+
+### Authentication Flow
+
+**Security Model:**
+1. User enters email/password on login page
+2. Next.js server creates HttpOnly cookie with `base64(email:password)`
+3. Cookie is SameSite=Lax, Secure in production
+4. All backend requests from Next.js include `Authorization: Basic <token>`
+5. Credentials **never** exposed to client JavaScript
+
+**⚠️ Important:** This is a bootstrap approach for development. In production, replace with:
+- JWT tokens from Devise
+- OAuth2/OpenID Connect
+- Session tokens with CSRF protection
+
+### File Structure
+
+```
+frontend/
+├── app/
+│   ├── layout.tsx                    # Root layout with providers
+│   ├── page.tsx                      # Dashboard (notes list)
+│   ├── auth/login/page.tsx           # Login page
+│   ├── notes/[id]/page.tsx           # Note editor + history
+│   └── api/
+│       ├── auth/                     # Auth endpoints
+│       └── notes/                    # Notes/versions proxies
+├── components/
+│   ├── ui/                           # shadcn components
+│   ├── layout/                       # Header, etc.
+│   ├── editor/                       # TipTap editor
+│   └── feedback/                     # Loading, error, empty states
+├── lib/
+│   ├── api/                          # API client + Zod schemas
+│   ├── auth/                         # Session management
+│   ├── realtime/                     # Action Cable client
+│   │   ├── cable.ts                  # Consumer with reconnection
+│   │   ├── notes.ts                  # Note subscription manager
+│   │   └── types.ts                  # Event type definitions
+│   ├── hooks/                        # React hooks
+│   │   ├── use-toast.ts
+│   │   └── use-realtime-note.ts      # Real-time collaboration hook
+│   ├── providers/                    # React Query, theme providers
+│   └── utils.ts                      # Utility functions
+└── test/
+    ├── unit/                         # Vitest tests
+    └── e2e/                          # Playwright tests (incl. real-time)
+```
+
+### Known Limitations (Out of Scope)
+
+❌ Real-time collaboration (Action Cable integration)
+❌ Diff view for version comparison
+❌ Merge conflict resolution UI
+❌ Azure AI Search integration
+❌ Command palette wiring
+❌ Full accessibility audit (WCAG AA)
+❌ Production-ready auth (JWT/OAuth)
+
+See [`frontend/IMPLEMENTATION_GUIDE.md`](frontend/IMPLEMENTATION_GUIDE.md) for detailed completion steps.
+
+### Testing
+
+```bash
+# Unit tests (Vitest)
+npm test
+
+# E2E tests (Playwright)
+npm run test:e2e
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+```
+
+### Demo Credentials
+
+```
+Email: alice@example.com
+Password: password123
+```
+
+---
 
 ## 📖 Additional Documentation
 

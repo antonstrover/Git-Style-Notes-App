@@ -50,6 +50,27 @@ RSpec.describe Versions::Create, type: :service do
         expect(note.reload.head_version_id).to eq(version.id)
       end
 
+      it 'broadcasts version_created event' do
+        service = described_class.new(
+          note: note,
+          author: owner,
+          content: 'Test content',
+          summary: 'Test summary'
+        )
+
+        expect(ActionCable.server).to receive(:broadcast).with(
+          "notes:#{note.id}",
+          hash_including(
+            type: "version_created",
+            note_id: note.id,
+            author: hash_including(id: owner.id, email: owner.email),
+            summary: 'Test summary'
+          )
+        )
+
+        service.call
+      end
+
       it 'sets parent_version_id to current head if not provided' do
         first_version = create(:version, note: note, author: owner)
         note.update_column(:head_version_id, first_version.id)
@@ -258,6 +279,70 @@ RSpec.describe Versions::Create, type: :service do
           Versions::Create::Error,
           /Failed to create version/
         )
+      end
+    end
+
+    context 'conflict detection' do
+      it 'raises ConflictError when base_version_id does not match head' do
+        v1 = create(:version, note: note)
+        note.update_column(:head_version_id, v1.id)
+
+        # Someone else creates v2
+        v2 = create(:version, note: note, parent_version: v1)
+        note.update_column(:head_version_id, v2.id)
+
+        # Try to create v3 based on stale v1
+        service = described_class.new(
+          note: note,
+          author: owner,
+          content: 'Conflicting content',
+          summary: 'Summary',
+          base_version_id: v1.id
+        )
+
+        expect { service.call }.to raise_error(
+          Versions::Create::ConflictError,
+          /Version conflict: base version/
+        )
+      end
+
+      it 'broadcasts conflict_notice when base_version_id mismatches' do
+        v1 = create(:version, note: note)
+        v2 = create(:version, note: note, parent_version: v1)
+        note.update_column(:head_version_id, v2.id)
+
+        service = described_class.new(
+          note: note,
+          author: owner,
+          content: 'Content',
+          base_version_id: v1.id
+        )
+
+        expect(ActionCable.server).to receive(:broadcast).with(
+          "notes:#{note.id}",
+          hash_including(
+            type: "conflict_notice",
+            note_id: note.id,
+            head_version_id: v2.id,
+            message: /Another user has updated this note/
+          )
+        )
+
+        expect { service.call }.to raise_error(Versions::Create::ConflictError)
+      end
+
+      it 'allows creation when base_version_id matches head' do
+        v1 = create(:version, note: note)
+        note.update_column(:head_version_id, v1.id)
+
+        service = described_class.new(
+          note: note,
+          author: owner,
+          content: 'New content',
+          base_version_id: v1.id
+        )
+
+        expect { service.call }.not_to raise_error
       end
     end
 
