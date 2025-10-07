@@ -17,6 +17,16 @@ class VersionPolicy < ApplicationPolicy
     create? # Same permission as creating a version
   end
 
+  def diff?
+    # Can diff any version you can view
+    note_policy.show?
+  end
+
+  def merge_preview?
+    # Can preview merge if you have edit rights (owner or editor)
+    note_policy.owner? || note_policy.editor?
+  end
+
   private
 
   def note_policy

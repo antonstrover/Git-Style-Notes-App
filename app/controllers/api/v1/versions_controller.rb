@@ -7,7 +7,7 @@ module Api
 
       before_action :authenticate_user!
       before_action :set_note
-      before_action :set_version, only: [:show, :revert]
+      before_action :set_version, only: [:show, :revert, :diff, :merge_preview, :revert_preview]
 
       # GET /api/v1/notes/:note_id/versions
       def index
@@ -82,6 +82,182 @@ module Api
         render json: {
           error: {
             code: 'revert_failed',
+            message: e.message
+          }
+        }, status: :unprocessable_entity
+      end
+
+      # GET /api/v1/notes/:note_id/versions/:id/diff?compare_to=:other_version_id&mode=line|word&context=3
+      def diff
+        authorize @version, :diff?
+
+        # Validate compare_to parameter
+        compare_to_id = params[:compare_to]
+        if compare_to_id.blank?
+          return render json: {
+            error: {
+              code: 'missing_parameter',
+              message: 'compare_to parameter is required'
+            }
+          }, status: :unprocessable_entity
+        end
+
+        if compare_to_id.to_i == @version.id
+          return render json: {
+            error: {
+              code: 'invalid_parameter',
+              message: 'compare_to cannot be the same as the current version'
+            }
+          }, status: :unprocessable_entity
+        end
+
+        # Find and authorize the comparison version
+        compare_version = @note.versions.find_by(id: compare_to_id)
+        unless compare_version
+          return render json: {
+            error: {
+              code: 'not_found',
+              message: 'Comparison version not found'
+            }
+          }, status: :not_found
+        end
+
+        authorize compare_version, :diff?
+
+        # Build options
+        options = {
+          mode: params[:mode]&.to_sym || :line,
+          context: (params[:context] || 3).to_i
+        }
+
+        # Validate mode
+        unless [:line, :word].include?(options[:mode])
+          return render json: {
+            error: {
+              code: 'invalid_parameter',
+              message: 'mode must be either "line" or "word"'
+            }
+          }, status: :unprocessable_entity
+        end
+
+        # Compute diff with caching
+        cache_key = "diff/#{@version.id}/#{compare_version.id}/#{options[:mode]}/#{options[:context]}"
+        result = Rails.cache.fetch(cache_key, expires_in: Rails.application.config.diff_settings[:cache_ttl].seconds) do
+          Diffs::Compute.new(
+            left_content: @version.content,
+            right_content: compare_version.content,
+            options: options
+          ).call
+        end
+
+        Rails.logger.info "Diff computed: version #{@version.id} vs #{compare_version.id}, mode=#{options[:mode]}"
+        render json: {
+          left_version: { id: @version.id, summary: @version.summary },
+          right_version: { id: compare_version.id, summary: compare_version.summary },
+          diff: result
+        }, status: :ok
+      rescue Diffs::Compute::ContentTooLargeError => e
+        render json: {
+          error: {
+            code: 'content_too_large',
+            message: e.message
+          }
+        }, status: :unprocessable_entity
+      rescue Diffs::Compute::Error => e
+        Rails.logger.error "Diff computation failed: #{e.message}"
+        render json: {
+          error: {
+            code: 'diff_failed',
+            message: e.message
+          }
+        }, status: :unprocessable_entity
+      end
+
+      # POST /api/v1/notes/:note_id/versions/:id/merge_preview
+      # Body: { base_version_id, head_version_id }
+      def merge_preview
+        authorize @version, :merge_preview?
+
+        base_version_id = params[:base_version_id]
+        head_version_id = params[:head_version_id]
+
+        if base_version_id.blank? || head_version_id.blank?
+          return render json: {
+            error: {
+              code: 'missing_parameters',
+              message: 'base_version_id and head_version_id are required'
+            }
+          }, status: :unprocessable_entity
+        end
+
+        # Find versions
+        base_version = @note.versions.find_by(id: base_version_id)
+        head_version = @note.versions.find_by(id: head_version_id)
+
+        unless base_version && head_version
+          return render json: {
+            error: {
+              code: 'not_found',
+              message: 'Base or head version not found'
+            }
+          }, status: :not_found
+        end
+
+        # Compute three-way merge preview
+        result = Diffs::MergePreview.new(
+          base_content: base_version.content,
+          local_content: @version.content,
+          head_content: head_version.content
+        ).call
+
+        Rails.logger.info "Merge preview: base=#{base_version_id}, local=#{@version.id}, head=#{head_version_id}, status=#{result[:status]}"
+        render json: {
+          local_version: { id: @version.id, summary: @version.summary },
+          base_version: { id: base_version.id, summary: base_version.summary },
+          head_version: { id: head_version.id, summary: head_version.summary },
+          merge_preview: result
+        }, status: :ok
+      rescue Diffs::MergePreview::Error => e
+        Rails.logger.error "Merge preview failed: #{e.message}"
+        render json: {
+          error: {
+            code: 'merge_preview_failed',
+            message: e.message
+          }
+        }, status: :unprocessable_entity
+      end
+
+      # GET /api/v1/notes/:note_id/versions/:id/revert_preview
+      def revert_preview
+        authorize @version, :diff?
+
+        unless @note.head_version
+          return render json: {
+            error: {
+              code: 'no_head_version',
+              message: 'Note has no head version'
+            }
+          }, status: :unprocessable_entity
+        end
+
+        # Compute diff from this version to current head
+        result = Diffs::Compute.new(
+          left_content: @version.content,
+          right_content: @note.head_version.content,
+          options: { mode: :line, context: 3 }
+        ).call
+
+        Rails.logger.info "Revert preview: version #{@version.id} to head #{@note.head_version.id}"
+        render json: {
+          revert_from: { id: @version.id, summary: @version.summary },
+          current_head: { id: @note.head_version.id, summary: @note.head_version.summary },
+          diff: result
+        }, status: :ok
+      rescue Diffs::Compute::Error => e
+        Rails.logger.error "Revert preview failed: #{e.message}"
+        render json: {
+          error: {
+            code: 'revert_preview_failed',
             message: e.message
           }
         }, status: :unprocessable_entity

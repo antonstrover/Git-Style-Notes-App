@@ -87,6 +87,66 @@ RSpec.describe VersionPolicy, type: :policy do
     end
   end
 
+  permissions :diff? do
+    it "allows owner to diff" do
+      expect(subject).to permit(owner, version)
+    end
+
+    it "allows editor to diff" do
+      expect(subject).to permit(editor, version)
+    end
+
+    it "allows viewer to diff" do
+      expect(subject).to permit(viewer, version)
+    end
+
+    it "denies non-collaborator from diffing private note" do
+      expect(subject).not_to permit(other_user, version)
+    end
+
+    context "with public note" do
+      before { note.update!(visibility: :public) }
+
+      it "allows any authenticated user to diff" do
+        expect(subject).to permit(other_user, version)
+      end
+    end
+
+    context "with link-shared note" do
+      before { note.update!(visibility: :link) }
+
+      it "allows any authenticated user to diff" do
+        expect(subject).to permit(other_user, version)
+      end
+    end
+  end
+
+  permissions :merge_preview? do
+    it "allows owner to preview merge" do
+      expect(subject).to permit(owner, version)
+    end
+
+    it "allows editor to preview merge" do
+      expect(subject).to permit(editor, version)
+    end
+
+    it "denies viewer from previewing merge" do
+      expect(subject).not_to permit(viewer, version)
+    end
+
+    it "denies non-collaborator from previewing merge" do
+      expect(subject).not_to permit(other_user, version)
+    end
+
+    context "with public note" do
+      before { note.update!(visibility: :public) }
+
+      it "denies non-owner/non-editor from previewing merge even for public notes" do
+        expect(subject).not_to permit(other_user, version)
+      end
+    end
+  end
+
   describe VersionPolicy::Scope do
     let!(:owned_note) { create(:note, owner: owner) }
     let!(:other_note) { create(:note) }

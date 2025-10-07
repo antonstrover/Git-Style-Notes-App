@@ -21,6 +21,9 @@ Rails.application.routes.draw do
         resources :versions do
           member do
             post :revert
+            get :diff
+            post :merge_preview
+            get :revert_preview
           end
         end
 
