@@ -25,4 +25,13 @@ export const queryKeys = {
     all: (noteId: number) => ["collaborators", noteId] as const,
     list: (noteId: number) => [...queryKeys.collaborators.all(noteId), "list"] as const,
   },
+  diffs: {
+    all: (noteId: number) => ["diffs", noteId] as const,
+    diff: (noteId: number, versionId: number, compareToId: number, options?: { mode?: string; context?: number }) =>
+      [...queryKeys.diffs.all(noteId), "diff", versionId, compareToId, options] as const,
+    mergePreview: (noteId: number, localVersionId: number, baseVersionId: number, headVersionId: number) =>
+      [...queryKeys.diffs.all(noteId), "merge-preview", localVersionId, baseVersionId, headVersionId] as const,
+    revertPreview: (noteId: number, versionId: number) =>
+      [...queryKeys.diffs.all(noteId), "revert-preview", versionId] as const,
+  },
 };

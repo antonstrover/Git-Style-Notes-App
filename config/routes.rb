@@ -13,6 +13,10 @@ Rails.application.routes.draw do
   # API routes
   namespace :api do
     namespace :v1 do
+      # Search endpoints
+      get "search", to: "search#index"
+      get "search/suggest", to: "search#suggest"
+
       resources :notes do
         member do
           post :fork

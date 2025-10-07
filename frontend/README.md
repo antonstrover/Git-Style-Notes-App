@@ -46,15 +46,19 @@ Set `SESSION_COOKIE_SECURE=true` in production.
 - **Editor**: TipTap rich text editor with markdown support
 - **Versions**: History pane with paginated version list
 - **Conflict Detection**: Handles 409 conflicts from concurrent edits
+- **Diff & Merge Preview**: Full-featured diff viewer with conflict detection
+  - Dedicated diff page with inline/side-by-side views
+  - Word-level highlighting for small changes
+  - Three-way merge preview showing conflicts
+  - Compare any two versions from history
+  - Conflict resolution dialog with merge analysis
 - **Theme**: Light/dark mode toggle
 - **Keyboard Shortcuts**: Cmd/Ctrl+S to save
 
 ### ⬜ Remaining (See IMPLEMENTATION_GUIDE.md)
-- Additional UI components (Dialog, Toast, DropdownMenu, Tabs)
-- Conflict resolution dialog
-- Toast notifications
+- Toast notifications (component ready, needs integration)
 - Update note title functionality
-- Comprehensive testing (unit + E2E)
+- Comprehensive testing (basic tests added, needs expansion)
 - Accessibility enhancements
 - Mobile responsive refinements
 
@@ -201,8 +205,7 @@ Other users: `bob@example.com`, `charlie@example.com` (same password).
 1. **Auth Security**: Basic auth with cookie storage is a temporary bootstrap. Replace before production.
 2. **No Real-Time**: Action Cable not integrated yet.
 3. **Limited Mobile UX**: Desktop-first design; mobile needs polish.
-4. **No Diff View**: Version comparison not implemented.
-5. **Search Disabled**: Placeholder only; Azure Search integration pending.
+4. **Search Disabled**: Placeholder only; Azure Search integration pending.
 
 See `IMPLEMENTATION_GUIDE.md` for completion roadmap.
 

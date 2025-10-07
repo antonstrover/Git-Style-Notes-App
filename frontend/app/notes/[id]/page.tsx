@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, History, ArrowLeft, FileText } from "lucide-react";
+import { Save, History, ArrowLeft, FileText, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -277,7 +277,10 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
       <div className="container max-w-screen-2xl py-8">
       <ConflictDialog
         open={showConflictDialog}
-        headVersionId={conflictHeadId || undefined}
+        noteId={noteId}
+        baseVersionId={note?.head_version_id || undefined}
+        localVersionId={note?.head_version_id || undefined}
+        headVersionId={conflictHeadId || note?.head_version_id || undefined}
         onClose={() => setShowConflictDialog(false)}
         onRefresh={handleRefresh}
         onFork={handleFork}
@@ -372,13 +375,28 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                   <div className="space-y-2">
                     {versions.map((version: Version) => (
                       <div key={version.id} className="rounded-lg border p-3 text-sm">
-                        <div className="font-medium">Version #{version.id}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {version.author?.email} • {formatRelativeTime(version.created_at)}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium">Version #{version.id}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {version.author?.email} • {formatRelativeTime(version.created_at)}
+                            </div>
+                            {version.summary && (
+                              <div className="mt-1 text-xs italic">{version.summary}</div>
+                            )}
+                          </div>
+                          {note?.head_version_id && version.id !== note.head_version_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              onClick={() => router.push(`/notes/${noteId}/diff?left=${version.id}&right=${note.head_version_id}&view=inline`)}
+                              aria-label="Compare to head"
+                            >
+                              <GitCompare className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
-                        {version.summary && (
-                          <div className="mt-1 text-xs italic">{version.summary}</div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -454,13 +472,28 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                 <div className="space-y-2">
                   {versions.map((version: Version) => (
                     <div key={version.id} className="rounded-lg border p-3 text-sm">
-                      <div className="font-medium">Version #{version.id}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {version.author?.email} • {formatRelativeTime(version.created_at)}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium">Version #{version.id}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {version.author?.email} • {formatRelativeTime(version.created_at)}
+                          </div>
+                          {version.summary && (
+                            <div className="mt-1 text-xs italic">{version.summary}</div>
+                          )}
+                        </div>
+                        {note?.head_version_id && version.id !== note.head_version_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2"
+                            onClick={() => router.push(`/notes/${noteId}/diff?left=${version.id}&right=${note.head_version_id}&view=inline`)}
+                            aria-label="Compare to head"
+                          >
+                            <GitCompare className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
-                      {version.summary && (
-                        <div className="mt-1 text-xs italic">{version.summary}</div>
-                      )}
                     </div>
                   ))}
                 </div>

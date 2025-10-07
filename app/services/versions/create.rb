@@ -78,6 +78,9 @@ module Versions
 
     def update_head_version(version)
       note.update!(head_version_id: version.id)
+
+      # Enqueue search indexing for new head version
+      enqueue_search_indexing(version) if AzureSearch.configured?
     end
 
     def log_creation(version)
@@ -119,6 +122,11 @@ module Versions
       )
 
       Rails.logger.info "Broadcast conflict_notice: note_id=#{note.id}, base=#{@base_version_id}, head=#{note.head_version_id}"
+    end
+
+    def enqueue_search_indexing(version)
+      Search::EmbeddingsJob.perform_later(note.id, version.id)
+      Rails.logger.info "Enqueued Search::EmbeddingsJob for note #{note.id}, version #{version.id}"
     end
   end
 end

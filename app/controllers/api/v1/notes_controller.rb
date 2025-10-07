@@ -50,8 +50,18 @@ module Api
       def update
         authorize @note
 
+        # Track if visibility changed to trigger reindexing
+        visibility_changed = @note.will_save_change_to_visibility?
+
         if @note.update(note_params)
           Rails.logger.info "Note updated: #{@note.id} by user #{current_user.id}"
+
+          # Reindex if visibility changed (ACL metadata needs update)
+          if visibility_changed && AzureSearch.configured?
+            Search::ReindexNoteJob.perform_later(@note.id)
+            Rails.logger.info "Enqueued Search::ReindexNoteJob for note #{@note.id} (visibility changed)"
+          end
+
           render json: @note, status: :ok
         else
           render json: {
@@ -68,8 +78,16 @@ module Api
       def destroy
         authorize @note
 
+        note_id = @note.id
         @note.destroy
-        Rails.logger.info "Note deleted: #{@note.id} by user #{current_user.id}"
+
+        # Remove from search index
+        if AzureSearch.configured?
+          Search::DeleteByNoteJob.perform_later(note_id)
+          Rails.logger.info "Enqueued Search::DeleteByNoteJob for note #{note_id}"
+        end
+
+        Rails.logger.info "Note deleted: #{note_id} by user #{current_user.id}"
         head :no_content
       end
 

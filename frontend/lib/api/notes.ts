@@ -1,5 +1,16 @@
 import { apiFetch, apiFetchPaginated } from "./http";
-import { noteSchema, versionSchema, type Note, type Version } from "./schemas";
+import {
+  noteSchema,
+  versionSchema,
+  diffResponseSchema,
+  mergePreviewResponseSchema,
+  revertPreviewResponseSchema,
+  type Note,
+  type Version,
+  type DiffResponse,
+  type MergePreviewResponse,
+  type RevertPreviewResponse,
+} from "./schemas";
 import { z } from "zod";
 
 /**
@@ -101,4 +112,65 @@ export async function revertVersion(
     body: JSON.stringify({ summary }),
   });
   return versionSchema.parse(data);
+}
+
+/**
+ * Diff & Merge API functions
+ */
+
+export interface DiffOptions {
+  mode?: "line" | "word";
+  context?: number;
+}
+
+export async function getDiff(
+  noteId: number,
+  versionId: number,
+  compareToId: number,
+  options?: DiffOptions
+): Promise<DiffResponse> {
+  const params = new URLSearchParams({
+    compare_to: compareToId.toString(),
+  });
+
+  if (options?.mode) {
+    params.append("mode", options.mode);
+  }
+  if (options?.context !== undefined) {
+    params.append("context", options.context.toString());
+  }
+
+  const data = await apiFetch<DiffResponse>(
+    `/notes/${noteId}/versions/${versionId}/diff?${params.toString()}`
+  );
+  return diffResponseSchema.parse(data);
+}
+
+export async function getMergePreview(
+  noteId: number,
+  localVersionId: number,
+  baseVersionId: number,
+  headVersionId: number
+): Promise<MergePreviewResponse> {
+  const data = await apiFetch<MergePreviewResponse>(
+    `/notes/${noteId}/versions/${localVersionId}/merge_preview`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        base_version_id: baseVersionId,
+        head_version_id: headVersionId,
+      }),
+    }
+  );
+  return mergePreviewResponseSchema.parse(data);
+}
+
+export async function getRevertPreview(
+  noteId: number,
+  versionId: number
+): Promise<RevertPreviewResponse> {
+  const data = await apiFetch<RevertPreviewResponse>(
+    `/notes/${noteId}/versions/${versionId}/revert_preview`
+  );
+  return revertPreviewResponseSchema.parse(data);
 }

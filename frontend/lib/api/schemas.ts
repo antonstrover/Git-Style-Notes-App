@@ -68,6 +68,107 @@ export function createPaginatedResponse<T extends z.ZodTypeAny>(itemSchema: T) {
   });
 }
 
+// Diff schemas
+export const wordTokenSchema = z.object({
+  type: z.enum(["unchanged", "added", "deleted"]),
+  text: z.string(),
+});
+
+export const wordDiffSchema = z.object({
+  old_tokens: z.array(wordTokenSchema),
+  new_tokens: z.array(wordTokenSchema),
+});
+
+export const diffChangeSchema = z.object({
+  type: z.enum(["add", "delete", "modify", "context"]),
+  old_line: z.number().nullable().optional(),
+  new_line: z.number().nullable().optional(),
+  old_text: z.string().optional(),
+  new_text: z.string().optional(),
+  word_diff: wordDiffSchema.optional(),
+});
+
+export const contextLineSchema = z.object({
+  old_line: z.number(),
+  new_line: z.number(),
+  text: z.string(),
+});
+
+export const diffHunkSchema = z.object({
+  old_start: z.number(),
+  old_lines: z.number(),
+  new_start: z.number(),
+  new_lines: z.number(),
+  context_before: z.array(contextLineSchema),
+  changes: z.array(diffChangeSchema),
+  context_after: z.array(contextLineSchema),
+  truncated: z.boolean().optional(),
+});
+
+export const diffStatsSchema = z.object({
+  additions: z.number(),
+  deletions: z.number(),
+  modifications: z.number(),
+  unchanged: z.number(),
+});
+
+export const diffResultSchema = z.object({
+  hunks: z.array(diffHunkSchema),
+  stats: diffStatsSchema,
+  truncated: z.boolean(),
+  mode: z.enum(["line", "word"]),
+});
+
+export const versionSummarySchema = z.object({
+  id: z.number(),
+  summary: z.string(),
+});
+
+export const diffResponseSchema = z.object({
+  left_version: versionSummarySchema,
+  right_version: versionSummarySchema,
+  diff: diffResultSchema,
+});
+
+// Merge preview schemas
+export const mergeHunkSchema = z.object({
+  status: z.enum(["clean", "conflict"]),
+  type: z.enum(["local_only", "head_only", "identical", "overlapping"]),
+  local_hunk: diffHunkSchema.nullable(),
+  head_hunk: diffHunkSchema.nullable(),
+  conflict_region: z.object({
+    start: z.number(),
+    end: z.number(),
+  }).optional(),
+});
+
+export const mergeSummarySchema = z.object({
+  total_hunks: z.number(),
+  clean_count: z.number(),
+  conflict_count: z.number(),
+  local_stats: diffStatsSchema,
+  head_stats: diffStatsSchema,
+});
+
+export const mergePreviewResultSchema = z.object({
+  status: z.enum(["clean", "conflicted"]),
+  hunks: z.array(mergeHunkSchema),
+  summary: mergeSummarySchema,
+});
+
+export const mergePreviewResponseSchema = z.object({
+  local_version: versionSummarySchema,
+  base_version: versionSummarySchema,
+  head_version: versionSummarySchema,
+  merge_preview: mergePreviewResultSchema,
+});
+
+export const revertPreviewResponseSchema = z.object({
+  revert_from: versionSummarySchema,
+  current_head: versionSummarySchema,
+  diff: diffResultSchema,
+});
+
 // Type exports
 export type User = z.infer<typeof userSchema>;
 export type UserPartial = z.infer<typeof userPartialSchema>;
@@ -75,3 +176,21 @@ export type Version = z.infer<typeof versionSchema>;
 export type Note = z.infer<typeof noteSchema>;
 export type Collaborator = z.infer<typeof collaboratorSchema>;
 export type ApiError = z.infer<typeof apiErrorSchema>;
+
+// Diff type exports
+export type WordToken = z.infer<typeof wordTokenSchema>;
+export type WordDiff = z.infer<typeof wordDiffSchema>;
+export type DiffChange = z.infer<typeof diffChangeSchema>;
+export type ContextLine = z.infer<typeof contextLineSchema>;
+export type DiffHunk = z.infer<typeof diffHunkSchema>;
+export type DiffStats = z.infer<typeof diffStatsSchema>;
+export type DiffResult = z.infer<typeof diffResultSchema>;
+export type VersionSummary = z.infer<typeof versionSummarySchema>;
+export type DiffResponse = z.infer<typeof diffResponseSchema>;
+
+// Merge preview type exports
+export type MergeHunk = z.infer<typeof mergeHunkSchema>;
+export type MergeSummary = z.infer<typeof mergeSummarySchema>;
+export type MergePreviewResult = z.infer<typeof mergePreviewResultSchema>;
+export type MergePreviewResponse = z.infer<typeof mergePreviewResponseSchema>;
+export type RevertPreviewResponse = z.infer<typeof revertPreviewResponseSchema>;

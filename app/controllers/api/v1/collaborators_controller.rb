@@ -29,6 +29,13 @@ module Api
 
         if @collaborator.save
           Rails.logger.info "Collaborator added: user #{user.id} to note #{@note.id} by #{current_user.id}"
+
+          # Reindex note to update ACL metadata
+          if AzureSearch.configured?
+            Search::ReindexNoteJob.perform_later(@note.id)
+            Rails.logger.info "Enqueued Search::ReindexNoteJob for note #{@note.id} (collaborator added)"
+          end
+
           render json: @collaborator.as_json(include: { user: { only: [:id, :email] } }), status: :created
         else
           render json: {
@@ -49,6 +56,13 @@ module Api
         @collaborator.destroy
 
         Rails.logger.info "Collaborator removed: #{@collaborator.id} from note #{@note.id} by #{current_user.id}"
+
+        # Reindex note to update ACL metadata
+        if AzureSearch.configured?
+          Search::ReindexNoteJob.perform_later(@note.id)
+          Rails.logger.info "Enqueued Search::ReindexNoteJob for note #{@note.id} (collaborator removed)"
+        end
+
         head :no_content
       end
 
