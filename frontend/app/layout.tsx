@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { ThemeProvider } from "@/lib/providers/theme-provider";
-import { Header } from "@/components/layout/header";
+import { ConditionalHeader } from "@/components/layout/conditional-header";
 import { Toaster } from "@/components/ui/toaster";
 import { CommandPaletteProvider } from "@/components/search/command-palette-provider";
 
@@ -22,11 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <QueryProvider>
             <CommandPaletteProvider>
               <div className="flex min-h-screen flex-col">
-                <Header />
+                <ConditionalHeader />
                 <main className="flex-1">{children}</main>
               </div>
               <Toaster />

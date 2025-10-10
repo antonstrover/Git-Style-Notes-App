@@ -27,25 +27,26 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    /* Enhanced dark theme with deep grays */
+    --background: 0 0% 7.1%;        /* #121212 */
+    --foreground: 0 0% 91.8%;       /* #EAEAEA - off-white for reduced eye strain */
+    --card: 0 0% 11.8%;             /* #1E1E1E - secondary panels for depth */
+    --card-foreground: 0 0% 91.8%;
+    --popover: 0 0% 9.4%;           /* #181818 */
+    --popover-foreground: 0 0% 91.8%;
+    --primary: 217 91% 60%;         /* #3B82F6 - vibrant blue accent */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 14.9%;        /* Slightly lighter than card */
+    --secondary-foreground: 0 0% 91.8%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 62.7%; /* #A0A0A0 - secondary text */
+    --accent: 217 91% 60%;          /* Match primary for consistency */
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -70,4 +71,40 @@
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* Landing Page Custom Styles */
+@layer utilities {
+  .neon-glow {
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4),
+                0 0 16px rgba(59, 130, 246, 0.2);
+  }
+
+  .neon-glow-hover:hover {
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.6),
+                0 0 24px rgba(59, 130, 246, 0.3);
+    filter: brightness(1.2);
+  }
+
+  .glass-panel {
+    background: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .gradient-mesh {
+    background:
+      radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 97% 21%, hsla(125, 98%, 72%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 52% 99%, hsla(354, 98%, 61%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 10% 29%, hsla(256, 96%, 67%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 97% 96%, hsla(38, 60%, 74%, 0.1) 0px, transparent 50%);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }

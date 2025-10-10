@@ -11,7 +11,7 @@ import { DiffViewer } from "@/components/diff/diff-viewer";
 import { DiffToolbar } from "@/components/diff/diff-toolbar";
 import { LoadingState } from "@/components/feedback/loading-state";
 import { ErrorState } from "@/components/feedback/error-state";
-import { getDiff, getNote } from "@/lib/api/notes";
+import { getDiff, getNote } from "@/lib/api/notes.client";
 import { queryKeys } from "@/lib/api/keys";
 
 interface DiffPageProps {
@@ -142,14 +142,14 @@ export default function DiffPage({ params }: DiffPageProps) {
           <div className="flex items-center gap-2">
             <span className="font-medium">Left:</span>
             <span className="text-muted-foreground">
-              Version #{diffData.left_version.id} - {diffData.left_version.summary}
+              Version #{diffData.left_version.version_number} - {diffData.left_version.summary}
             </span>
           </div>
           <span className="text-muted-foreground">→</span>
           <div className="flex items-center gap-2">
             <span className="font-medium">Right:</span>
             <span className="text-muted-foreground">
-              Version #{diffData.right_version.id} - {diffData.right_version.summary}
+              Version #{diffData.right_version.version_number} - {diffData.right_version.summary}
             </span>
           </div>
         </div>

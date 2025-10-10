@@ -89,9 +89,34 @@ function InlineView({ hunk }: { hunk: DiffHunk }) {
       ))}
 
       {/* Changes */}
-      {hunk.changes.map((change, idx) => (
-        <ChangeLineInline key={`change-${idx}`} change={change} />
-      ))}
+      {hunk.changes.map((change, idx) => {
+        // For modify type, render as two lines: deletion + addition
+        if (change.type === "modify") {
+          return (
+            <div key={`change-${idx}`}>
+              <ChangeLineInline
+                change={{
+                  ...change,
+                  type: "delete",
+                  new_line: null,
+                  new_text: undefined,
+                  word_diff: undefined,
+                }}
+              />
+              <ChangeLineInline
+                change={{
+                  ...change,
+                  type: "add",
+                  old_line: null,
+                  old_text: undefined,
+                }}
+              />
+            </div>
+          );
+        }
+
+        return <ChangeLineInline key={`change-${idx}`} change={change} />;
+      })}
 
       {/* Context after */}
       {hunk.context_after.map((line, idx) => (

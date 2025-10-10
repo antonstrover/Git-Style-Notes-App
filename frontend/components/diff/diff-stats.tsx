@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Minus, Tilde } from "lucide-react";
+import { Plus, Minus, Edit2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { DiffStats } from "@/lib/api/schemas";
 
@@ -57,7 +57,7 @@ export function DiffStatsComponent({ stats, compact = false }: DiffStatsProps) {
         )}
         {stats.modifications > 0 && (
           <div className="flex items-center gap-1.5">
-            <Tilde className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            <Edit2 className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
             <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
               {stats.modifications} {stats.modifications === 1 ? "modification" : "modifications"}
             </span>

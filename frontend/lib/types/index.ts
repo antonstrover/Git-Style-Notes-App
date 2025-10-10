@@ -28,6 +28,7 @@ export interface Version {
   note_id: number;
   author_id: number;
   parent_version_id: number | null;
+  version_number: number;
   summary: string;
   content: string;
   created_at: string;

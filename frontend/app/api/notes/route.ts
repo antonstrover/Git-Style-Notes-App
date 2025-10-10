@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listNotes, createNote } from "@/lib/api/notes";
+import { listNotes, createNote } from "@/lib/api/notes.server";
 import { isAuthenticated } from "@/lib/auth/session";
 
 export async function GET(request: NextRequest) {

@@ -332,8 +332,8 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
               <CardHeader>
                 <CardTitle>Content</CardTitle>
                 <CardDescription>
-                  {note.head_version_id
-                    ? `Version #${note.head_version_id} • ${formatRelativeTime(note.updated_at)}`
+                  {note.head_version?.version_number
+                    ? `Version #${note.head_version.version_number} • ${formatRelativeTime(note.updated_at)}`
                     : "No versions yet"}
                 </CardDescription>
               </CardHeader>
@@ -377,7 +377,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                       <div key={version.id} className="rounded-lg border p-3 text-sm">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="font-medium">Version #{version.id}</div>
+                            <div className="font-medium">Version #{version.version_number}</div>
                             <div className="text-xs text-muted-foreground">
                               {version.author?.email} • {formatRelativeTime(version.created_at)}
                             </div>
@@ -425,8 +425,8 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
             <CardHeader>
               <CardTitle>Content</CardTitle>
               <CardDescription>
-                {note.head_version_id
-                  ? `Version #${note.head_version_id} • ${formatRelativeTime(note.updated_at)}`
+                {note.head_version?.version_number
+                  ? `Version #${note.head_version.version_number} • ${formatRelativeTime(note.updated_at)}`
                   : "No versions yet"}
               </CardDescription>
             </CardHeader>
@@ -474,7 +474,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                     <div key={version.id} className="rounded-lg border p-3 text-sm">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="font-medium">Version #{version.id}</div>
+                          <div className="font-medium">Version #{version.version_number}</div>
                           <div className="text-xs text-muted-foreground">
                             {version.author?.email} • {formatRelativeTime(version.created_at)}
                           </div>

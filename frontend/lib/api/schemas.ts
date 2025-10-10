@@ -19,6 +19,7 @@ export const versionSchema = z.object({
   note_id: z.number(),
   author_id: z.number(),
   parent_version_id: z.number().nullable(),
+  version_number: z.number(),
   summary: z.string(),
   content: z.string(),
   created_at: z.string(),
@@ -121,6 +122,7 @@ export const diffResultSchema = z.object({
 
 export const versionSummarySchema = z.object({
   id: z.number(),
+  version_number: z.number(),
   summary: z.string(),
 });
 

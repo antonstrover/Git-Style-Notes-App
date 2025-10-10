@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listVersions, createVersion } from "@/lib/api/notes";
+import { listVersions, createVersion } from "@/lib/api/notes.server";
 import { isAuthenticated } from "@/lib/auth/session";
 import { ApiError } from "@/lib/api/http";
 

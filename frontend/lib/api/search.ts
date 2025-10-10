@@ -1,4 +1,3 @@
-import { apiFetch } from "./http";
 import {
   searchResponseSchema,
   suggestResponseSchema,
@@ -7,7 +6,8 @@ import {
 } from "./schemas";
 
 /**
- * Search API functions
+ * Search API functions (client-side)
+ * These call Next.js API routes which handle auth server-side
  */
 
 export interface SearchOptions {
@@ -38,7 +38,15 @@ export async function searchNotes(options: SearchOptions): Promise<SearchRespons
     params.append("note_id", noteId.toString());
   }
 
-  const data = await apiFetch<SearchResponse>(`/search?${params.toString()}`);
+  // Call Next.js API route instead of backend directly
+  const response = await fetch(`/api/search?${params.toString()}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || "Search failed");
+  }
+
+  const data = await response.json();
   return searchResponseSchema.parse(data);
 }
 
@@ -55,6 +63,14 @@ export async function suggestNotes(options: SuggestOptions): Promise<SuggestResp
     top: top.toString(),
   });
 
-  const data = await apiFetch<SuggestResponse>(`/search/suggest?${params.toString()}`);
+  // Call Next.js API route instead of backend directly
+  const response = await fetch(`/api/search/suggest?${params.toString()}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || "Suggest failed");
+  }
+
+  const data = await response.json();
   return suggestResponseSchema.parse(data);
 }

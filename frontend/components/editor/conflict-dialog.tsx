@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { getMergePreview } from "@/lib/api/notes";
+import { getMergePreview } from "@/lib/api/notes.client";
 import { queryKeys } from "@/lib/api/keys";
 
 interface ConflictDialogProps {
