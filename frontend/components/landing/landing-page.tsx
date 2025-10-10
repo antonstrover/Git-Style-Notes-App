@@ -71,26 +71,26 @@ export function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
             className="text-center"
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary"
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="mb-6 inline-flex items-center gap-2 rounded-md border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary"
             >
               <Zap className="h-4 w-4" />
               <span>Version-Controlled Note-Taking</span>
             </motion.div>
 
-            <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-7xl">
+            <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-6xl">
               Your Ideas,
               <br />
-              <span className="text-gradient">Perfectly Versioned</span>
+              <span className="text-primary">Perfectly Versioned</span>
             </h1>
 
-            <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground md:text-xl">
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
               A revolutionary note-taking platform with Git-style version control, real-time collaboration,
               and AI-powered search. Never lose a thought, never lose a version.
             </p>
@@ -98,7 +98,7 @@ export function LandingPage() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
               className="flex flex-col items-center justify-center gap-4 sm:flex-row"
             >
               <GradientButton size="lg" href="/auth/register">
@@ -106,7 +106,7 @@ export function LandingPage() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </GradientButton>
 
-              <Button size="lg" variant="outline" asChild className="border-primary/20 hover:bg-primary/10">
+              <Button size="lg" variant="outline" asChild>
                 <Link href="/auth/login">Sign In</Link>
               </Button>
             </motion.div>
@@ -115,7 +115,7 @@ export function LandingPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
               className="mt-16 grid grid-cols-3 gap-8"
             >
               <div>
@@ -142,8 +142,8 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="glass-panel overflow-hidden rounded-2xl p-8"
+            transition={{ duration: 0.5 }}
+            className="overflow-hidden rounded-md border border-border bg-card p-8"
           >
             <div className="mb-6 text-center">
               <h2 className="mb-2 text-2xl font-bold">Complete Version Timeline</h2>
@@ -161,7 +161,7 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
             className="mb-12 text-center"
           >
             <h2 className="mb-4 text-4xl font-bold tracking-tight">How It Works</h2>
@@ -177,21 +177,16 @@ export function LandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
                 className="relative"
               >
-                <div className="glass-panel rounded-lg p-6 text-center">
-                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl font-bold text-primary">
+                <div className="rounded-md border border-border bg-card p-6 text-center">
+                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-md bg-primary/10 text-3xl font-bold text-primary">
                     {step.number}
                   </div>
                   <h3 className="mb-2 text-xl font-semibold">{step.title}</h3>
                   <p className="text-muted-foreground">{step.description}</p>
                 </div>
-
-                {/* Connector line */}
-                {index < steps.length - 1 && (
-                  <div className="absolute right-0 top-1/2 hidden h-px w-8 -translate-y-1/2 translate-x-full bg-gradient-to-r from-primary/50 to-transparent md:block" />
-                )}
               </motion.div>
             ))}
           </div>
@@ -205,7 +200,7 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
             className="mb-12 text-center"
           >
             <h2 className="mb-4 text-4xl font-bold tracking-tight">Powerful Features</h2>
@@ -235,12 +230,9 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="glass-panel relative overflow-hidden rounded-2xl p-12 text-center"
+            transition={{ duration: 0.5 }}
+            className="relative overflow-hidden rounded-md border border-border bg-card p-12 text-center"
           >
-            {/* Background glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-purple-500/10 to-transparent" />
-
             <div className="relative z-10">
               <h2 className="mb-4 text-4xl font-bold tracking-tight">
                 Ready to Transform Your Note-Taking?
@@ -255,7 +247,7 @@ export function LandingPage() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </GradientButton>
 
-                <Button size="lg" variant="outline" asChild className="border-primary/20 hover:bg-primary/10">
+                <Button size="lg" variant="outline" asChild>
                   <Link href="/auth/login">Sign In</Link>
                 </Button>
               </div>
@@ -265,7 +257,7 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative border-t border-border/50 px-6 py-8">
+      <footer className="relative border-t border-border px-6 py-8">
         <div className="container mx-auto max-w-6xl text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Versioned Notes. All rights reserved.</p>
         </div>

@@ -49,17 +49,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
-      {/* Animated background */}
-      <div className="gradient-mesh absolute inset-0" />
-      <div
-        className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
-        style={{ animation: "float 8s ease-in-out infinite" }}
-      />
-      <div
-        className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-purple-500/10 blur-3xl"
-        style={{ animation: "float 10s ease-in-out infinite", animationDelay: "2s" }}
-      />
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
+      {/* Subtle background */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
 
       {/* Back to home link */}
       <Link
@@ -73,13 +65,13 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
         className="relative z-10 w-full max-w-md"
       >
-        <Card className="glass-panel border-primary/20">
+        <Card>
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary">
                 <FileText className="h-6 w-6" />
               </div>
             </div>
@@ -100,7 +92,6 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="bg-background/50"
                 />
               </div>
               <div className="space-y-2">
@@ -113,7 +104,6 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="bg-background/50"
                 />
               </div>
               {error && (
@@ -127,7 +117,7 @@ export default function LoginPage() {
               )}
               <Button
                 type="submit"
-                className="neon-glow-hover w-full"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? "Signing in..." : "Sign In"}
@@ -139,15 +129,15 @@ export default function LoginPage() {
                 <span className="text-muted-foreground">Don&apos;t have an account? </span>
                 <Link
                   href="/auth/register"
-                  className="font-medium text-primary transition-colors hover:text-primary/80"
+                  className="font-medium text-primary transition-colors hover:brightness-110"
                 >
                   Create one
                 </Link>
               </div>
 
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center text-xs text-muted-foreground">
+              <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-center text-xs text-muted-foreground">
                 <p className="font-medium text-foreground">Demo credentials:</p>
-                <p className="mt-1">alice@example.com / password123</p>
+                <p className="mt-1 font-mono">alice@example.com / password123</p>
               </div>
             </div>
           </CardContent>

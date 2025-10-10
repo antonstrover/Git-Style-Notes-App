@@ -374,11 +374,11 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                 ) : (
                   <div className="space-y-2">
                     {versions.map((version: Version) => (
-                      <div key={version.id} className="rounded-lg border p-3 text-sm">
+                      <div key={version.id} className="rounded-md border border-border p-3 text-sm transition-smooth hover:border-primary/30">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="font-medium">Version #{version.version_number}</div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="font-medium font-mono">Version #{version.version_number}</div>
+                            <div className="text-xs text-muted-foreground font-sans">
                               {version.author?.email} • {formatRelativeTime(version.created_at)}
                             </div>
                             {version.summary && (
@@ -471,11 +471,11 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
               ) : (
                 <div className="space-y-2">
                   {versions.map((version: Version) => (
-                    <div key={version.id} className="rounded-lg border p-3 text-sm">
+                    <div key={version.id} className="rounded-md border border-border p-3 text-sm font-mono transition-smooth hover:border-primary/30">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="font-medium">Version #{version.version_number}</div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="font-medium font-mono">Version #{version.version_number}</div>
+                          <div className="text-xs text-muted-foreground font-sans">
                             {version.author?.email} • {formatRelativeTime(version.created_at)}
                           </div>
                           {version.summary && (

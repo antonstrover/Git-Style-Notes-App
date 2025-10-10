@@ -62,17 +62,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
-      {/* Animated background */}
-      <div className="gradient-mesh absolute inset-0" />
-      <div
-        className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
-        style={{ animation: "float 8s ease-in-out infinite" }}
-      />
-      <div
-        className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-purple-500/10 blur-3xl"
-        style={{ animation: "float 10s ease-in-out infinite", animationDelay: "2s" }}
-      />
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
+      {/* Subtle background */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
 
       {/* Back to home link */}
       <Link
@@ -86,13 +78,13 @@ export default function RegisterPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
         className="relative z-10 w-full max-w-md"
       >
-        <Card className="glass-panel border-primary/20">
+        <Card>
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary">
                 <FileText className="h-6 w-6" />
               </div>
             </div>
@@ -113,7 +105,6 @@ export default function RegisterPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="bg-background/50"
                 />
               </div>
 
@@ -127,7 +118,6 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="bg-background/50"
                 />
                 <p className="text-xs text-muted-foreground">
                   Must be at least 8 characters long
@@ -144,7 +134,6 @@ export default function RegisterPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="bg-background/50"
                 />
               </div>
 
@@ -160,7 +149,7 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                className="neon-glow-hover w-full"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? "Creating account..." : "Create Account"}
@@ -171,7 +160,7 @@ export default function RegisterPage() {
               <span className="text-muted-foreground">Already have an account? </span>
               <Link
                 href="/auth/login"
-                className="font-medium text-primary transition-colors hover:text-primary/80"
+                className="font-medium text-primary transition-colors hover:brightness-110"
               >
                 Sign in
               </Link>

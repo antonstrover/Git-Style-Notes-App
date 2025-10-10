@@ -150,7 +150,7 @@ export default function DashboardPage() {
             {notes.map((note: Note) => (
               <Card
                 key={note.id}
-                className="cursor-pointer transition-colors hover:bg-accent"
+                className="cursor-pointer transition-smooth hover:border-primary/30"
                 onClick={() => router.push(`/notes/${note.id}`)}
                 role="button"
                 tabIndex={0}

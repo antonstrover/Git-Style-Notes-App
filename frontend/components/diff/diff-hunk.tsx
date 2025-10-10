@@ -19,11 +19,11 @@ export function DiffHunkComponent({ hunk, viewMode, isConflicted = false }: Diff
 
   return (
     <div className={cn(
-      "border rounded-lg overflow-hidden",
+      "border border-border rounded-md overflow-hidden",
       isConflicted && "border-destructive"
     )}>
       {/* Hunk header */}
-      <div className="flex items-center justify-between bg-muted px-4 py-2 text-xs font-mono text-muted-foreground">
+      <div className="flex items-center justify-between bg-muted/50 px-4 py-2 text-xs font-mono text-muted-foreground">
         <span>
           @@ -{hunk.old_start},{hunk.old_lines} +{hunk.new_start},{hunk.new_lines} @@
         </span>
@@ -61,7 +61,7 @@ export function DiffHunkComponent({ hunk, viewMode, isConflicted = false }: Diff
       )}
 
       {hunk.truncated && (
-        <div className="bg-yellow-50 dark:bg-yellow-950 px-4 py-2 text-xs text-yellow-800 dark:text-yellow-200">
+        <div className="bg-warning/10 px-4 py-2 text-xs text-warning-foreground">
           This hunk has been truncated due to size. Some changes are not shown.
         </div>
       )}
@@ -139,9 +139,9 @@ function InlineView({ hunk }: { hunk: DiffHunk }) {
 
 function ChangeLineInline({ change }: { change: DiffChange }) {
   const bgClass = {
-    add: "bg-green-50 dark:bg-green-950/30",
-    delete: "bg-red-50 dark:bg-red-950/30",
-    modify: "bg-yellow-50 dark:bg-yellow-950/30",
+    add: "bg-success/10 border-l-2 border-l-success",
+    delete: "bg-destructive/10 border-l-2 border-l-destructive",
+    modify: "bg-warning/10 border-l-2 border-l-warning",
     context: "",
   }[change.type];
 
@@ -153,9 +153,9 @@ function ChangeLineInline({ change }: { change: DiffChange }) {
   }[change.type];
 
   const textClass = {
-    add: "text-green-700 dark:text-green-300",
-    delete: "text-red-700 dark:text-red-300",
-    modify: "text-yellow-700 dark:text-yellow-300",
+    add: "text-success-foreground",
+    delete: "text-destructive-foreground",
+    modify: "text-warning-foreground",
     context: "text-muted-foreground",
   }[change.type];
 
@@ -246,15 +246,15 @@ function ChangeLineSide({ change, side }: { change: DiffChange; side: "left" | "
   }
 
   const bgClass = {
-    add: "bg-green-50 dark:bg-green-950/30",
-    delete: "bg-red-50 dark:bg-red-950/30",
-    modify: "bg-yellow-50 dark:bg-yellow-950/30",
+    add: "bg-success/10 border-l-2 border-l-success",
+    delete: "bg-destructive/10 border-l-2 border-l-destructive",
+    modify: "bg-warning/10 border-l-2 border-l-warning",
   }[change.type];
 
   const textClass = {
-    add: "text-green-700 dark:text-green-300",
-    delete: "text-red-700 dark:text-red-300",
-    modify: "text-yellow-700 dark:text-yellow-300",
+    add: "text-success-foreground",
+    delete: "text-destructive-foreground",
+    modify: "text-warning-foreground",
   }[change.type];
 
   const lineNumber = side === "left" ? change.old_line : change.new_line;
@@ -284,8 +284,8 @@ function WordDiffLine({ tokens }: { tokens: WordToken[] }) {
       {tokens.map((token, idx) => {
         const className = {
           unchanged: "",
-          added: "bg-green-200 dark:bg-green-800 font-semibold",
-          deleted: "bg-red-200 dark:bg-red-800 font-semibold",
+          added: "bg-success/30 font-semibold",
+          deleted: "bg-destructive/30 font-semibold",
         }[token.type];
 
         return (
