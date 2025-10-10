@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_06_104020) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_10_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -64,8 +64,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_06_104020) do
     t.string "summary", default: "", null: false
     t.text "content", null: false
     t.datetime "created_at", precision: nil, null: false
+    t.integer "version_number", null: false
     t.index ["author_id"], name: "index_versions_on_author_id"
     t.index ["note_id", "created_at"], name: "index_versions_on_note_id_and_created_at"
+    t.index ["note_id", "version_number"], name: "index_versions_on_note_id_and_version_number", unique: true
     t.index ["note_id"], name: "index_versions_on_note_id"
     t.index ["parent_version_id"], name: "index_versions_on_parent_version_id"
   end

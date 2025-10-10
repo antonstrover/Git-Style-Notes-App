@@ -152,8 +152,8 @@ module Api
 
         Rails.logger.info "Diff computed: version #{@version.id} vs #{compare_version.id}, mode=#{options[:mode]}"
         render json: {
-          left_version: { id: @version.id, summary: @version.summary },
-          right_version: { id: compare_version.id, summary: compare_version.summary },
+          left_version: { id: @version.id, version_number: @version.version_number, summary: @version.summary },
+          right_version: { id: compare_version.id, version_number: compare_version.version_number, summary: compare_version.summary },
           diff: result
         }, status: :ok
       rescue Diffs::Compute::ContentTooLargeError => e
@@ -212,9 +212,9 @@ module Api
 
         Rails.logger.info "Merge preview: base=#{base_version_id}, local=#{@version.id}, head=#{head_version_id}, status=#{result[:status]}"
         render json: {
-          local_version: { id: @version.id, summary: @version.summary },
-          base_version: { id: base_version.id, summary: base_version.summary },
-          head_version: { id: head_version.id, summary: head_version.summary },
+          local_version: { id: @version.id, version_number: @version.version_number, summary: @version.summary },
+          base_version: { id: base_version.id, version_number: base_version.version_number, summary: base_version.summary },
+          head_version: { id: head_version.id, version_number: head_version.version_number, summary: head_version.summary },
           merge_preview: result
         }, status: :ok
       rescue Diffs::MergePreview::Error => e
@@ -249,8 +249,8 @@ module Api
 
         Rails.logger.info "Revert preview: version #{@version.id} to head #{@note.head_version.id}"
         render json: {
-          revert_from: { id: @version.id, summary: @version.summary },
-          current_head: { id: @note.head_version.id, summary: @note.head_version.summary },
+          revert_from: { id: @version.id, version_number: @version.version_number, summary: @version.summary },
+          current_head: { id: @note.head_version.id, version_number: @note.head_version.version_number, summary: @note.head_version.summary },
           diff: result
         }, status: :ok
       rescue Diffs::Compute::Error => e

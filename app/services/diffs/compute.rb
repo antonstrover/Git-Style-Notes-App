@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'diff/lcs'
+require 'nokogiri'
 
 module Diffs
   class Compute
@@ -10,7 +11,8 @@ module Diffs
     DEFAULT_OPTIONS = {
       mode: :line,              # :line or :word
       context: 3,               # number of context lines
-      word_threshold_lines: 60  # use word-level if changed lines <= this
+      word_threshold_lines: 60, # use word-level if changed lines <= this
+      extract_text_from_html: true # extract plain text from HTML for better diffs
     }.freeze
 
     def initialize(left_content:, right_content:, options: {})
@@ -23,9 +25,13 @@ module Diffs
     def call
       validate_content_size!
 
+      # Prepare content for diffing (extract text from HTML if needed)
+      left_prepared = prepare_content_for_diff(left_content.to_s)
+      right_prepared = prepare_content_for_diff(right_content.to_s)
+
       # Convert to arrays of lines
-      left_lines = left_content.to_s.lines.map(&:chomp)
-      right_lines = right_content.to_s.lines.map(&:chomp)
+      left_lines = left_prepared.lines.map(&:chomp)
+      right_lines = right_prepared.lines.map(&:chomp)
 
       # Compute line-based diff
       line_diff = Diff::LCS.sdiff(left_lines, right_lines)
@@ -287,17 +293,189 @@ module Diffs
         when '=' then stats[:unchanged] += 1
         when '-' then stats[:deletions] += 1
         when '+' then stats[:additions] += 1
-        when '!' then stats[:modifications] += 1
+        when '!'
+          # Check if this is a real modification or should be split into delete+add
+          if should_split_modification?(change.old_element, change.new_element)
+            stats[:deletions] += 1
+            stats[:additions] += 1
+          else
+            stats[:modifications] += 1
+          end
         end
       end
 
       stats
     end
 
+    def should_split_modification?(old_text, new_text)
+      return false if old_text.nil? || new_text.nil?
+
+      # Calculate similarity ratio
+      # If lines share very little in common, treat as separate delete+add
+      similarity = calculate_similarity(old_text, new_text)
+      similarity < 0.3 # Less than 30% similar = split into delete+add
+    end
+
+    def calculate_similarity(str1, str2)
+      return 0.0 if str1.empty? && str2.empty?
+      return 0.0 if str1.empty? || str2.empty?
+
+      # Use Levenshtein-based similarity
+      # Calculate the length of the longest common subsequence
+      longer = [str1.length, str2.length].max
+      distance = levenshtein_distance(str1, str2)
+
+      (longer - distance).to_f / longer
+    end
+
+    def levenshtein_distance(str1, str2)
+      n = str1.length
+      m = str2.length
+      return m if n == 0
+      return n if m == 0
+
+      # Use a 2-row approach to save memory
+      prev_row = (0..m).to_a
+      curr_row = Array.new(m + 1)
+
+      (0...n).each do |i|
+        curr_row[0] = i + 1
+        (0...m).each do |j|
+          cost = str1[i] == str2[j] ? 0 : 1
+          curr_row[j + 1] = [
+            curr_row[j] + 1,      # insertion
+            prev_row[j + 1] + 1,  # deletion
+            prev_row[j] + cost    # substitution
+          ].min
+        end
+        prev_row, curr_row = curr_row, prev_row
+      end
+
+      prev_row[m]
+    end
+
     def effective_mode(hunks)
       # Check if any hunk has word-level diff
       has_word_diff = hunks.any? { |h| h[:changes].any? { |c| c[:word_diff] } }
       has_word_diff ? :word : :line
+    end
+
+    def prepare_content_for_diff(content)
+      return content unless options[:extract_text_from_html]
+      return content unless html_content?(content)
+
+      # Try to extract plain text from HTML
+      extract_text_from_html(content)
+    rescue => e
+      Rails.logger.warn "Failed to extract text from HTML: #{e.message}, falling back to formatted HTML"
+      # Fallback: pretty-print HTML for better line-by-line diffs
+      format_html(content)
+    end
+
+    def html_content?(content)
+      # Check if content contains HTML tags
+      # Look for common HTML patterns
+      content.match?(/<[a-z][\s\S]*>/i) &&
+        (content.include?('<p>') || content.include?('<div>') ||
+         content.include?('<h1>') || content.include?('<h2>') ||
+         content.include?('<ul>') || content.include?('<ol>') ||
+         content.include?('<br'))
+    end
+
+    def extract_text_from_html(html)
+      doc = Nokogiri::HTML::DocumentFragment.parse(html)
+
+      # Extract text while preserving structure
+      extract_text_with_structure(doc.children)
+    end
+
+    def extract_text_with_structure(nodes, depth = 0, parent_is_list = false)
+      result = []
+
+      nodes.each do |node|
+        case node.name
+        when 'text'
+          # Add text nodes, trimming excessive whitespace
+          text = node.text.strip
+          result << text unless text.empty?
+        when 'p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+          # Block elements: add content on new lines
+          inner_text = extract_text_with_structure(node.children, depth + 1, false)
+          result << inner_text unless inner_text.empty?
+          result << "" unless nodes.last == node # Add blank line after block
+        when 'br'
+          # Line breaks
+          result << ""
+        when 'ul', 'ol'
+          # Lists: extract items - pass flag to treat children as list items
+          list_items = extract_text_with_structure(node.children, depth + 1, true)
+          result << list_items unless list_items.empty?
+        when 'li'
+          # List items: prefix with marker and treat as block-level
+          marker = depth > 0 ? "  " * (depth - 1) + "- " : "- "
+          inner_text = extract_text_with_structure(node.children, depth + 1, false)
+          result << (marker + inner_text) unless inner_text.empty?
+        when 'strong', 'b', 'em', 'i', 'code', 'span', 'a'
+          # Inline elements: just extract text
+          inner_text = extract_text_with_structure(node.children, depth, false)
+          result << inner_text unless inner_text.empty?
+        else
+          # Other elements: recurse
+          inner_text = extract_text_with_structure(node.children, depth, parent_is_list)
+          result << inner_text unless inner_text.empty?
+        end
+      end
+
+      # Join with appropriate separators
+      if depth == 0 || parent_is_list
+        # At root level or inside a list, use newlines to separate items
+        result.join("\n").gsub(/\n{3,}/, "\n\n") # Remove excessive blank lines
+      else
+        # Inside inline or nested elements, use spaces
+        result.join(" ")
+      end
+    end
+
+    def format_html(html)
+      # Pretty-print HTML to ensure proper line breaks
+      doc = Nokogiri::HTML::DocumentFragment.parse(html)
+
+      # Format with indentation and line breaks
+      formatted = []
+      format_node(doc, formatted, 0)
+      formatted.join("\n")
+    rescue => e
+      Rails.logger.error "Failed to format HTML: #{e.message}"
+      html # Return original if formatting fails
+    end
+
+    def format_node(node, output, indent_level)
+      indent = "  " * indent_level
+
+      node.children.each do |child|
+        case child.type
+        when Nokogiri::XML::Node::ELEMENT_NODE
+          # Opening tag
+          attrs = child.attributes.map { |k, v| "#{k}=\"#{v.value}\"" }.join(" ")
+          tag = attrs.empty? ? "<#{child.name}>" : "<#{child.name} #{attrs}>"
+
+          if child.children.empty?
+            # Self-closing or empty element
+            output << "#{indent}#{tag}</#{child.name}>"
+          elsif child.children.size == 1 && child.children.first.text?
+            # Single text child - keep on same line
+            output << "#{indent}#{tag}#{child.children.first.text}</#{child.name}>"
+          else
+            # Multi-child - format with indentation
+            output << "#{indent}#{tag}"
+            format_node(child, output, indent_level + 1)
+            output << "#{indent}</#{child.name}>"
+          end
+        when Nokogiri::XML::Node::TEXT_NODE
+          text = child.text.strip
+          output << "#{indent}#{text}" unless text.empty?
+        end
+      end
     end
   end
 end
