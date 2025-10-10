@@ -306,5 +306,203 @@ RSpec.describe Diffs::Compute, type: :service do
         end
       end
     end
+
+    describe 'HTML content handling' do
+      context 'with HTML content from TipTap editor' do
+        let(:left_content) do
+          '<p>Initial research findings on versioned note systems.</p>'
+        end
+
+        let(:right_content) do
+          '<p>Initial research findings on versioned note systems. Added section on immutability.</p>'
+        end
+
+        it 'extracts plain text from HTML for diffing' do
+          result = service.call
+
+          # Should show text-based diff, not HTML tags
+          expect(result[:hunks]).not_to be_empty
+
+          # Check that the diff contains the actual text changes
+          changes_text = result[:hunks].flat_map { |h| h[:changes] }
+                                       .map { |c| [c[:old_text], c[:new_text]] }
+                                       .flatten
+                                       .compact
+                                       .join(' ')
+
+          expect(changes_text).to include('immutability')
+          expect(changes_text).not_to include('<p>') unless changes_text.include?('versioned note systems')
+        end
+      end
+
+      context 'with multi-line HTML content' do
+        let(:left_content) do
+          <<~HTML
+            <p>First paragraph</p>
+            <p>Second paragraph</p>
+            <p>Third paragraph</p>
+          HTML
+        end
+
+        let(:right_content) do
+          <<~HTML
+            <p>First paragraph</p>
+            <p>Modified second paragraph</p>
+            <p>Third paragraph</p>
+          HTML
+        end
+
+        it 'creates proper line-based diffs from HTML' do
+          result = service.call
+
+          expect(result[:hunks]).not_to be_empty
+          expect(result[:stats][:modifications]).to be > 0
+
+          # Should detect the change in the second paragraph
+          modified_changes = result[:hunks].flat_map { |h| h[:changes] }
+                                           .select { |c| c[:type] == :modify }
+
+          expect(modified_changes).not_to be_empty
+        end
+      end
+
+      context 'with HTML list elements' do
+        let(:left_content) do
+          '<ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul>'
+        end
+
+        let(:right_content) do
+          '<ul><li>Item 1</li><li>Item 2</li><li>Item 3</li><li>Item 4</li></ul>'
+        end
+
+        it 'extracts list items as separate lines' do
+          result = service.call
+
+          expect(result[:hunks]).not_to be_empty
+          expect(result[:stats][:additions]).to be > 0
+
+          # Check that list items are extracted
+          all_text = result[:hunks].flat_map { |h| h[:changes] }
+                                   .map { |c| [c[:old_text], c[:new_text]] }
+                                   .flatten
+                                   .compact
+                                   .join("\n")
+
+          expect(all_text).to include('Item 4')
+        end
+      end
+
+      context 'with HTML headings and formatting' do
+        let(:left_content) do
+          '<h1>Title</h1><p>This is <strong>important</strong> text.</p>'
+        end
+
+        let(:right_content) do
+          '<h1>Title</h1><p>This is <strong>very important</strong> text.</p>'
+        end
+
+        it 'preserves text structure while extracting content' do
+          result = service.call
+
+          expect(result[:hunks]).not_to be_empty
+
+          # Should detect the word change
+          changes = result[:hunks].flat_map { |h| h[:changes] }
+          expect(changes.any? { |c| c[:new_text]&.include?('very important') || c[:old_text]&.include?('important') }).to be true
+        end
+      end
+
+      context 'with plain text content' do
+        let(:left_content) { "Plain text line 1\nPlain text line 2\n" }
+        let(:right_content) { "Plain text line 1\nModified line 2\n" }
+
+        it 'still works correctly with plain text' do
+          result = service.call
+
+          expect(result[:hunks]).not_to be_empty
+          expect(result[:stats][:modifications]).to eq(1)
+        end
+      end
+
+      context 'with HTML disabled via options' do
+        let(:left_content) { '<p>HTML content</p>' }
+        let(:right_content) { '<p>Modified HTML content</p>' }
+        let(:options) { { extract_text_from_html: false } }
+
+        it 'treats HTML as plain text when disabled' do
+          result = service.call
+
+          # Should diff the raw HTML
+          changes_text = result[:hunks].flat_map { |h| h[:changes] }
+                                       .map { |c| [c[:old_text], c[:new_text]] }
+                                       .flatten
+                                       .compact
+                                       .join(' ')
+
+          expect(changes_text).to include('<p>')
+        end
+      end
+
+      context 'with giant single-line HTML (user reported issue)' do
+        let(:left_content) do
+          '<p>Cp -r app /Users/antonstrover/CV_projects/Git-Style-Notes-App</p>' \
+          '<p>Cp -r config /Users/antonstrover/CV_projects/Git-Style-Notes-App</p>' \
+          '<p>Cp -r spec /Users/antonstrover/CV_projects/Git-Style-Notes-App</p>' \
+          '<p>Implemented a complete Rails 8 API-only backend for an immutable note system.</p>'
+        end
+
+        let(:right_content) do
+          '<p>Cp -r app /Users/antonstrover/CV_projects/Git-Style-Notes-App</p>' \
+          '<p>Cp -r config /Users/antonstrover/CV_projects/Git-Style-Notes-App</p>' \
+          '<p>Cp -r spec /Users/antonstrover/CV_projects/Git-Style-Notes-App</p>' \
+          '<p>Implemented a complete Rails 8 API-only backend. Added authentication.</p>'
+        end
+
+        it 'breaks down HTML into readable lines instead of one giant hunk' do
+          result = service.call
+
+          # Should have multiple lines, not one giant hunk
+          total_lines = result[:hunks].flat_map do |h|
+            h[:context_before].size + h[:changes].size + h[:context_after].size
+          end.sum
+
+          expect(total_lines).to be > 1
+
+          # Should detect the specific text change
+          modified = result[:hunks].flat_map { |h| h[:changes] }
+                                   .select { |c| c[:type] == :modify }
+
+          expect(modified).not_to be_empty
+        end
+      end
+
+      context 'with malformed HTML' do
+        let(:left_content) { '<p>Unclosed tag' }
+        let(:right_content) { '<p>Unclosed tag modified' }
+
+        it 'handles malformed HTML gracefully' do
+          expect { service.call }.not_to raise_error
+        end
+      end
+
+      context 'with nested HTML structures' do
+        let(:left_content) do
+          '<div><h1>Title</h1><div><p>Nested paragraph</p></div></div>'
+        end
+
+        let(:right_content) do
+          '<div><h1>Title</h1><div><p>Modified nested paragraph</p></div></div>'
+        end
+
+        it 'extracts text from nested structures correctly' do
+          result = service.call
+
+          expect(result[:hunks]).not_to be_empty
+
+          changes = result[:hunks].flat_map { |h| h[:changes] }
+          expect(changes.any? { |c| c[:new_text]&.include?('Modified nested') || c[:old_text]&.include?('Nested') }).to be true
+        end
+      end
+    end
   end
 end

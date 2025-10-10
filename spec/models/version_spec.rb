@@ -15,6 +15,7 @@ RSpec.describe Version, type: :model do
     it { is_expected.to validate_presence_of(:summary) }
     it { is_expected.to validate_presence_of(:note) }
     it { is_expected.to validate_presence_of(:author) }
+    it { is_expected.to validate_uniqueness_of(:version_number).scoped_to(:note_id) }
 
     context 'parent_version must belong to same note' do
       it 'is valid when parent_version belongs to same note' do
@@ -88,6 +89,77 @@ RSpec.describe Version, type: :model do
         expect {
           version.update_attribute(:content, 'New content')
         }.not_to change { version.reload.content }
+      end
+    end
+
+    describe 'version_number auto-increment' do
+      it 'automatically sets version_number to 1 for first version' do
+        note = create(:note)
+        version = create(:version, note: note)
+
+        expect(version.version_number).to eq(1)
+      end
+
+      it 'auto-increments version_number for subsequent versions' do
+        note = create(:note)
+        v1 = create(:version, note: note)
+        v2 = create(:version, note: note)
+        v3 = create(:version, note: note)
+
+        expect(v1.version_number).to eq(1)
+        expect(v2.version_number).to eq(2)
+        expect(v3.version_number).to eq(3)
+      end
+
+      it 'different notes have independent version numbering' do
+        note1 = create(:note)
+        note2 = create(:note)
+
+        # Create versions for note1
+        v1_n1 = create(:version, note: note1)
+        v2_n1 = create(:version, note: note1)
+
+        # Create versions for note2
+        v1_n2 = create(:version, note: note2)
+        v2_n2 = create(:version, note: note2)
+
+        # Each note should have its own sequence
+        expect(v1_n1.version_number).to eq(1)
+        expect(v2_n1.version_number).to eq(2)
+        expect(v1_n2.version_number).to eq(1)
+        expect(v2_n2.version_number).to eq(2)
+      end
+
+      it 'version_number is immutable after creation' do
+        version = create(:version)
+        original_number = version.version_number
+        version.version_number = 999
+
+        expect(version).not_to be_valid
+        expect(version.errors[:version_number]).to include('cannot be changed after creation')
+      end
+
+      it 'does not allow duplicate version_numbers within same note' do
+        note = create(:note)
+        v1 = create(:version, note: note)
+
+        # Try to create another version with same version_number
+        v2 = build(:version, note: note)
+        v2.instance_variable_set(:@skip_set_version_number, true)
+        v2.version_number = v1.version_number
+
+        expect(v2).not_to be_valid
+      end
+
+      it 'allows same version_number across different notes' do
+        note1 = create(:note)
+        note2 = create(:note)
+
+        v1 = create(:version, note: note1)
+        v2 = create(:version, note: note2)
+
+        expect(v1.version_number).to eq(v2.version_number)
+        expect(v1.version_number).to eq(1)
       end
     end
   end
